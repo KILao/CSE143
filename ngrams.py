@@ -31,11 +31,11 @@ def replaceWithUNK1(token_sents, token_bank):
 				token_sents[i][j] = UNKOWN_WORD
 	return token_sents
 
-def replaceWithUnk2(token_sents, train_data):
+def replaceWithUnk2(token_sents, train_data, unknown_word):
 	for i in range(0, len(token_sents)):
 		for j in range(0, len(token_sents[i])):
-			if token_sents[i] not in train_data:
-				token_sents[i][j] = UNKOWN_WORD
+			if token_sents[i][j] not in train_data:
+				token_sents[i][j] = unknown_word
 	return token_sents
 
 def createNgrams(token_sents_unk, n):
@@ -84,14 +84,19 @@ def main():
 
 	"""
 	Training result
+
+	
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
 
-	train_data = createTokenBank(token_sents_unk) # training data for word frequency
+	train_data, __ = createTokenBank(token_sents_unk) # training data for word frequency
 	train_data_words = token_count # word count for training data
+
+	print("Words in training data: ", token_count)
+	print("Unique words including <STOP> and <UNK>", len(train_data))
 
 	n_grams = []
 	for i in range(n):
@@ -110,11 +115,13 @@ def main():
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
-	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data)
+	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data, UNKOWN_WORD)
 
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
+		unknown_word = tuple(UNKOWN_WORD for j in range(i + 1))
+		replaceWithUnk2(n_gram, token_banks[i + 1], unknown_word)
 		n_grams.append(n_gram)
 	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Test data:")
@@ -128,11 +135,13 @@ def main():
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
-	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data)
+	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data, UNKOWN_WORD)
 
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
+		unknown_word = tuple(UNKOWN_WORD for j in range(i + 1))
+		replaceWithUnk2(n_gram, token_banks[i + 1], unknown_word)
 		n_grams.append(n_gram)
 	dev_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Dev data:")
