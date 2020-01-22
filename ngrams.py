@@ -71,6 +71,11 @@ def computePerplexity(token_bank, cond_token_bank, n_grams, M, N, n):
 			if token[n - 1] == STOP_WORD:
 				log_lik_s += 0
 				continue
+			"""
+			If it's unigram, denominator should be number of
+			words in train data. Otherwise, its the frequency
+			of the previous n-1 words.
+			"""
 			if n > 1:
 				N = cond_token_bank[token[:n - 1]]
 			pr_token = token_bank[token] / N
