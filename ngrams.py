@@ -10,11 +10,11 @@ def readFile(filename):
 	return data
 
 def tokenize(sentences):
-	return [sentences.split(" ") for sentence in sentences]
+	return [sentence.split(" ") for sentence in sentences]
 
 def createTokenBank(token_sents):
 	token_bank = {}
-	token_count
+	token_count = 0
 	for token_sent in token_sents:
 		for token in token_sent:
 			if token not in token_bank:
@@ -27,26 +27,26 @@ def createTokenBank(token_sents):
 def replaceWithUNK1(token_sents, token_bank):
 	for i in range(0, len(token_sents)):
 		for j in range(0, len(token_sents[i])):
-			if token_bank[i] < 3:
+			if token_bank[token_sents[i][j]] < 3:
 				token_sents[i][j] = UNKOWN_WORD
 	return token_sents
 
 def replaceWithUnk2(token_sents, train_data):
 	for i in range(0, len(token_sents)):
 		for j in range(0, len(token_sents[i])):
-			if token_bank[i] not in train_data:
+			if token_sents[i] not in train_data:
 				token_sents[i][j] = UNKOWN_WORD
 	return token_sents
 
 def createNgrams(token_sents_unk, n):
 	n_grams_sents = []
 	for token_sent_unk in token_sents_unk:
-		n_gram_sent = []
-		if len(token_sent) < n:
+		n_grams_sent = []
+		if len(token_sent_unk) < n:
 			continue
-		for i in range(0, len(token_sent) - n + 1):
-			n_gram = tuple(token_sent_unk[j] for j in range(i, i + n))
-			n_grams_sent.append(n_gram)
+		for i in range(0, len(token_sent_unk) - n + 1):
+			n_grams = tuple(token_sent_unk[j] for j in range(i, i + n))
+			n_grams_sent.append(n_grams)
 		n_grams_sents.append(n_grams_sent)
 	return n_grams_sents
 
@@ -95,12 +95,13 @@ def main():
 
 	n_grams = []
 	for i in range(n):
-		n_grams.append(createNgrams(token_sents_unk, i + 1))
-		token_banks[i + 1], __, createTokenBank(n_grams)
+		n_gram = createNgrams(token_sents_unk, i + 1)
+		token_banks[i + 1], __ = createTokenBank(n_gram)
+		n_grams.append(n_gram)
 	train_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Train data:")
 	for i in range(n):
-		print(i + 1, "-gram":, r)
+		print(i + 1, "-gram: ", train_result[i])
 	"""
 	Testing result
 	"""
@@ -112,11 +113,12 @@ def main():
 
 	n_grams = []
 	for i in range(n):
-		n_grams.append(createNgrams(token_sents_unk, i + 1))
+		n_gram = createNgrams(token_sents_unk, i + 1)
+		n_grams.append(n_gram)
 	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Test data:")
 	for i in range(n):
-		print(i + 1, "-gram":, r)
+		print(i + 1, "-gram: ", test_result[i])
 
 	"""
 	Dev result
@@ -129,13 +131,14 @@ def main():
 
 	n_grams = []
 	for i in range(n):
-		n_grams.append(createNgrams(token_sents_unk, i + 1))
-	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
+		n_gram = createNgrams(token_sents_unk, i + 1)
+		n_grams.append(n_gram)
+	dev_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Dev data:")
 	for i in range(n):
-		print(i + 1, "-gram":, r)
+		print(i + 1, "-gram: ", dev_result[i])
 
-
+main()
 
 
 
