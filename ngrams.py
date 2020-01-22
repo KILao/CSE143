@@ -24,10 +24,10 @@ def createTokenBank(token_sents):
 			token_count += 1;
 	return (token_bank, token_count)
 
-def replaceWithUNK1(token_sents, token_bank):
+def replaceWithUNK1(token_sents, token_bank, unk_threshold):
 	for i in range(0, len(token_sents)):
 		for j in range(0, len(token_sents[i])):
-			if token_bank[token_sents[i][j]] < 3:
+			if token_bank[token_sents[i][j]] < unk_threshold:
 				token_sents[i][j] = UNKOWN_WORD
 	return token_sents
 
@@ -103,6 +103,7 @@ def main():
 	Token banks used to store all the n-gram tokens from training data.
 	"""
 	n = 3
+	unk_threshold = 3
 	token_banks = {0 : {}}
 
 	"""
@@ -112,7 +113,7 @@ def main():
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
 	token_sents = tokenize(sentenes)
 	token_bank, token_count = createTokenBank(token_sents)
-	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
+	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
 
 	"""
 	Keep track of training data acnd number of words in training data
@@ -141,12 +142,19 @@ def main():
 		print(i + 1, "-gram: ", train_result[i])
 
 	"""
+	For test and dev, not only does the words with frequency less than 3
+	needs to be replaced with UNK, but the tokens that aren't in the
+	trian data needs to be replaced with UNK. For unigram, bigram and
+	trigram, use (UNK,), (UNK, UNK), and (UNK, UNK, UNK) respectively.
+	"""
+
+	"""
 	Testing result:
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.test.tokens")
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
-	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
+	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
 	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data, UNKOWN_WORD)
 
 	n_grams = []
@@ -166,7 +174,7 @@ def main():
 	sentences = readFile("A1-Data/1b_benchmark.dev.tokens")
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
-	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
+	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
 	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data, UNKOWN_WORD)
 
 	n_grams = []
