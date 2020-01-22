@@ -50,7 +50,7 @@ def createNgrams(token_sents_unk, n):
 		n_grams_sents.append(n_grams_sent)
 	return n_grams_sents
 
-def computePerplexity(token_bank, cond_token_bank, n_grams, num_instances, word_count, n):
+def computePerplexity(token_bank, cond_token_bank, n_grams, M, N, n):
 	log_lik = 0
 	for n_gram in n_grams:
 		log_lik_s = 0
@@ -59,12 +59,25 @@ def computePerplexity(token_bank, cond_token_bank, n_grams, num_instances, word_
 				log_lik_s += 0
 				continue
 			if n > 1:
-				token_count = cond_token_bank[token[:n - 1]]
-			log_lik_s += math.log(token_bank[token] / token_count, 2)
+				N = cond_token_bank[token[:n - 1]]
+			pr_token = token_bank[token] / N
+			log_lik_s += math.log(pr_token, 2)
 		log_lik += log_lik_s
-	l = log_lik / num_instances
+	l = log_lik / M
 	perplexity = math.pow(2, -1 * l)
 	return perplexity
+
+def testing(data, M, N)
+
+def main():
+	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
+	token_sents = tokenize(sentences)
+	token_bank = createTokenBank(token_sents)
+	token_sents_unk = replaceWithUNK1(sentences, token_bank)
+	token_banks = {0 : {}}
+	for i in range(1, 4):
+		n_grams = createNgrams(token_sents_unk, i)
+		token_bank, token_count, createTokenBank(n_grams)
 
 
 
