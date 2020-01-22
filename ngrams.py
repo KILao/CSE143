@@ -50,11 +50,24 @@ def createNgrams(token_sents_unk, n):
 		n_grams_sents.append(n_grams_sent)
 	return n_grams_sents
 
+"""
+Inputs:
+  token_bank: dictionary to hold the frequency of a certain token.
+  cond_token_bank: dictionary to hold the frequency of the previous
+  n - 1 words.
+  n_grams: the data being calculated on.
+  M: number of words in the testing data.
+  N: number of words in the training data.
+  n: gram.
+"""
 def computePerplexity(token_bank, cond_token_bank, n_grams, M, N, n):
 	log_lik = 0
 	for n_gram in n_grams:
 		log_lik_s = 0
 		for token in n_gram:
+			"""
+			If encountered the stop word, probability is 1.
+			"""
 			if token[n - 1] == STOP_WORD:
 				log_lik_s += 0
 				continue
@@ -76,28 +89,42 @@ def test(train_data, testing_data, word_count_test, word_count_train, n):
 
 def main():
 	"""
-	Read file, preprocess the data, and get training data.
+	Getting training, testing, and development result all requires reading data and
+	preprocessing it. Preprocessing involves tokenizing the sentences and replacing
+	some words with UNK's. More preprocessing will need to be done for each n-gram.
 	"""
 
+	"""
+	Token banks used to store all the n-gram tokens from training data.
+	"""
 	n = 3
 	token_banks = {0 : {}}
 
 	"""
-	Training result
-
-	
+	There are 26602 unique words including STOP and UNK.
+	There are 1622905 words in training data.
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
-	token_sents = tokenize(sentences)
+	token_sents = tokenize(sentenes)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
 
+	"""
+	Keep track of training data acnd number of words in training data
+	for test and dev.
+	"""
 	train_data, __ = createTokenBank(token_sents_unk) # training data for word frequency
 	train_data_words = token_count # word count for training data
 
 	print("Words in training data: ", token_count)
 	print("Unique words including <STOP> and <UNK>", len(train_data))
 
+	"""
+	Training result:
+	Using the tokenized sentences that contains UNK's, generate n-grams for it
+	and store it. Create a token bank from the n-gram, which are used as part
+	of the training data for the test and dev.
+	"""
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
@@ -109,7 +136,7 @@ def main():
 		print(i + 1, "-gram: ", train_result[i])
 
 	"""
-	Testing result
+	Testing result:
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.test.tokens")
 	token_sents = tokenize(sentences)
