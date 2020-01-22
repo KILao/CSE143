@@ -176,22 +176,3 @@ def main():
 		print(i + 1, "-gram: ", dev_result[i])
 
 main()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
