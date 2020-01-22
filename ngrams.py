@@ -93,8 +93,6 @@ def main():
 	train_data = createTokenBank(token_sents_unk) # training data for word frequency
 	train_data_words = token_count # word count for training data
 
-	print()
-
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
