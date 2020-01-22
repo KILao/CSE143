@@ -67,17 +67,73 @@ def computePerplexity(token_bank, cond_token_bank, n_grams, M, N, n):
 	perplexity = math.pow(2, -1 * l)
 	return perplexity
 
-def testing(data, M, N)
+def test(train_data, testing_data, word_count_test, word_count_train, n):
+	result = []
+	for i in range(n):
+		perplexity = computePerplexity(train_data[i + 1], train_data[i], testing_data[i], word_count_test, word_count_train, i + 1)
+		result.append(perplexity)
+	return result
 
 def main():
+	"""
+	Read file, preprocess the data, and get training data.
+	"""
+
+	n = 3
+	token_banks = {0 : {}}
+
+	"""
+	Training result
+	"""
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
 	token_sents = tokenize(sentences)
-	token_bank = createTokenBank(token_sents)
-	token_sents_unk = replaceWithUNK1(sentences, token_bank)
-	token_banks = {0 : {}}
-	for i in range(1, 4):
-		n_grams = createNgrams(token_sents_unk, i)
-		token_bank, token_count, createTokenBank(n_grams)
+	token_bank, token_count = createTokenBank(token_sents)
+	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
+
+	train_data = createTokenBank(token_sents_unk) # training data for word frequency
+	train_data_words = token_count # word count for training data
+
+	n_grams = []
+	for i in range(n):
+		n_grams.append(createNgrams(token_sents_unk, i + 1))
+		token_banks[i + 1], __, createTokenBank(n_grams)
+	train_result = test(token_banks, n_grams, token_count, train_data_words, n)
+	print("Train data:")
+	for i in range(n):
+		print(i + 1, "-gram":, r)
+	"""
+	Testing result
+	"""
+	sentences = readFile("A1-Data/1b_benchmark.test.tokens")
+	token_sents = tokenize(sentences)
+	token_bank, token_count = createTokenBank(token_sents)
+	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
+	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data)
+
+	n_grams = []
+	for i in range(n):
+		n_grams.append(createNgrams(token_sents_unk, i + 1))
+	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
+	print("Test data:")
+	for i in range(n):
+		print(i + 1, "-gram":, r)
+
+	"""
+	Dev result
+	"""
+	sentences = readFile("A1-Data/1b_benchmark.dev.tokens")
+	token_sents = tokenize(sentences)
+	token_bank, token_count = createTokenBank(token_sents)
+	token_sents_unk = replaceWithUNK1(token_sents, token_bank)
+	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data)
+
+	n_grams = []
+	for i in range(n):
+		n_grams.append(createNgrams(token_sents_unk, i + 1))
+	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
+	print("Dev data:")
+	for i in range(n):
+		print(i + 1, "-gram":, r)
 
 
 
