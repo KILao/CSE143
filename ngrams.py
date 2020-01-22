@@ -24,10 +24,17 @@ def createTokenBank(token_sents):
 			token_count += 1;
 	return (token_bank, token_count)
 
-def replaceWithUnk(token_sents, token_bank):
+def replaceWithUNK1(token_sents, token_bank):
 	for i in range(0, len(token_sents)):
 		for j in range(0, len(token_sents[i])):
 			if token_bank[i] < 3:
+				token_sents[i][j] = UNKOWN_WORD
+	return token_sents
+
+def replaceWithUnk2(token_sents, train_data):
+	for i in range(0, len(token_sents)):
+		for j in range(0, len(token_sents[i])):
+			if token_bank[i] not in train_data:
 				token_sents[i][j] = UNKOWN_WORD
 	return token_sents
 
