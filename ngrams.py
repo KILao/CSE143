@@ -50,6 +50,11 @@ def createNgrams(token_sents_unk, n):
 		n_grams_sents.append(n_grams_sent)
 	return n_grams_sents
 
+def computePerplexity(log_liks, M):
+	log_lik = sum([sum(log_lik_s) for log_lik_s in log_liks])
+	perplexity = math.pow(2, -1 * log_lik / M)
+	return perplexity
+
 """
 Inputs:
   token_bank: dictionary to hold the frequency of a certain token.
@@ -60,16 +65,18 @@ Inputs:
   N: number of words in the training data.
   n: gram.
 """
-def computePerplexity(token_bank, cond_token_bank, n_grams, M, N, n):
-	log_lik = 0
+def computeLogProbability(token_bank, cond_token_bank, n_grams, N, n):
+	log_lik = []
+	# log_lik = 0
 	for n_gram in n_grams:
-		log_lik_s = 0
+		log_lik_s = []
+		# log_lik_s = 0
 		for token in n_gram:
 			"""
 			If encountered the stop word, probability is 1.
 			"""
 			if token[n - 1] == STOP_WORD:
-				log_lik_s += 0
+				log_lik_s.append(0)
 				continue
 			"""
 			If it's unigram, denominator should be number of
@@ -78,17 +85,22 @@ def computePerplexity(token_bank, cond_token_bank, n_grams, M, N, n):
 			"""
 			if n > 1:
 				N = cond_token_bank[token[:n - 1]]
-			pr_token = token_bank[token] / N
-			log_lik_s += math.log(pr_token, 2)
-		log_lik += log_lik_s
-	l = log_lik / M
-	perplexity = math.pow(2, -1 * l)
-	return perplexity
+			log_pr_token = math.log(token_bank[token] / N, 2)
+			log_lik_s.append(log_pr_token)
+			# log_lik_s += math.log(pr_token, 2)
+		log_lik.append(log_lik_s)
+		# log_lik += log_lik_s
+	return log_lik
+	# l = log_lik / M
+	# perplexity = math.pow(2, -1 * l)
+	# return perplexity
+
 
 def test(train_data, testing_data, word_count_test, word_count_train, n):
 	result = []
 	for i in range(n):
-		perplexity = computePerplexity(train_data[i + 1], train_data[i], testing_data[i], word_count_test, word_count_train, i + 1)
+		log_lik = computeLogProbability(train_data[i + 1], train_data[i], testing_data[i], word_count_train, i + 1)
+		perplexity = computePerplexity(log_lik, word_count_test)
 		result.append(perplexity)
 	return result
 
@@ -111,7 +123,7 @@ def main():
 	There are 1622905 words in training data.
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
-	token_sents = tokenize(sentenes)
+	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
 
