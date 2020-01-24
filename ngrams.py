@@ -73,9 +73,9 @@ def computeLogProbability(token_bank, cond_token_bank, n_grams, N, n):
 		# log_lik_s = 0
 		for token in n_gram:
 			"""
-			If encountered the stop word, probability is 1.
+			If encountered the stop word, probability is 1. Only for unigrams.
 			"""
-			if token[n - 1] == STOP_WORD:
+			if (token[n - 1] == STOP_WORD and n == 1) or token not in token_bank:
 				log_lik_s.append(0)
 				continue
 			"""
@@ -104,7 +104,7 @@ def test(train_data, testing_data, word_count_test, word_count_train, n):
 		result.append(perplexity)
 	return result
 
-def main():
+def part1():
 	"""
 	Getting training, testing, and development result all requires reading data and
 	preprocessing it. Preprocessing involves tokenizing the sentences and replacing
@@ -154,26 +154,16 @@ def main():
 		print(i + 1, "-gram: ", train_result[i])
 
 	"""
-	For test and dev, not only does the words with frequency less than 3
-	needs to be replaced with UNK, but the tokens that aren't in the
-	trian data needs to be replaced with UNK. For unigram, bigram and
-	trigram, use (UNK,), (UNK, UNK), and (UNK, UNK, UNK) respectively.
-	"""
-
-	"""
 	Testing result:
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.test.tokens")
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
-	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
-	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data, UNKOWN_WORD)
+	token_sents_unk = replaceWithUnk2(token_sents, train_data, UNKOWN_WORD)
 
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
-		unknown_word = tuple(UNKOWN_WORD for j in range(i + 1))
-		replaceWithUnk2(n_gram, token_banks[i + 1], unknown_word)
 		n_grams.append(n_gram)
 	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Test data:")
@@ -186,18 +176,34 @@ def main():
 	sentences = readFile("A1-Data/1b_benchmark.dev.tokens")
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
-	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
-	token_sents_unk = replaceWithUnk2(token_sents_unk, train_data, UNKOWN_WORD)
+	token_sents_unk = replaceWithUnk2(token_sents, train_data, UNKOWN_WORD)
 
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
-		unknown_word = tuple(UNKOWN_WORD for j in range(i + 1))
-		replaceWithUnk2(n_gram, token_banks[i + 1], unknown_word)
 		n_grams.append(n_gram)
 	dev_result = test(token_banks, n_grams, token_count, train_data_words, n)
 	print("Dev data:")
 	for i in range(n):
 		print(i + 1, "-gram: ", dev_result[i])
 
+def main():
+	part1()
+
 main()
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
