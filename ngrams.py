@@ -1,11 +1,12 @@
 import math
 
+START_WORD = "<START>"
 STOP_WORD = "<STOP>"
 UNKOWN_WORD = "<UNK>"
 
 def readFile(filename):
 	file = open(filename)
-	data = [sentence[:len(sentence) - 1] + " " + STOP_WORD for sentence in file]
+	data = [START_WORD + " " + sentence[:len(sentence) - 1] + " " + STOP_WORD for sentence in file]
 	file.close()
 	return data
 
@@ -67,15 +68,14 @@ Inputs:
 """
 def computeLogProbability(token_bank, cond_token_bank, n_grams, N, n):
 	log_lik = []
-	# log_lik = 0
 	for n_gram in n_grams:
 		log_lik_s = []
-		# log_lik_s = 0
 		for token in n_gram:
 			"""
-			If encountered the stop word, probability is 1. Only for unigrams.
+			If unigram and encountered stop or start word,
+			probability is 1. Of if gram isn't present.
 			"""
-			if (token[n - 1] == STOP_WORD and n == 1) or token not in token_bank:
+			if (token[0] == STOP_WORD and n == 1) or token not in token_bank:
 				log_lik_s.append(0)
 				continue
 			"""
@@ -87,24 +87,35 @@ def computeLogProbability(token_bank, cond_token_bank, n_grams, N, n):
 				N = cond_token_bank[token[:n - 1]]
 			log_pr_token = math.log(token_bank[token] / N, 2)
 			log_lik_s.append(log_pr_token)
-			# log_lik_s += math.log(pr_token, 2)
 		log_lik.append(log_lik_s)
-		# log_lik += log_lik_s
 	return log_lik
-	# l = log_lik / M
-	# perplexity = math.pow(2, -1 * l)
-	# return perplexity
-
 
 def test(train_data, testing_data, word_count_test, word_count_train, n):
 	result = []
+	log_liks = []
 	for i in range(n):
 		log_lik = computeLogProbability(train_data[i + 1], train_data[i], testing_data[i], word_count_train, i + 1)
 		perplexity = computePerplexity(log_lik, word_count_test)
 		result.append(perplexity)
-	return result
+		log_liks.append(log_lik)
+	return (result, log_liks)
 
-def part1():
+def displayResults(result, type):
+	print(type + ":")
+	for i in range(len(result)):
+		print(i + 1, "-gram: ", result[i])
+
+"""
+unigram: remove start word.
+bigram: no change.
+trigram: add prob of first 2 words in each sentence.
+"""
+def smoothing(log_liks, lams):
+	log_liks[0] = [log_lik_s[1:] for log_lik_s in log_liks[0]]
+	log_liks[2] = [[log_lik_s2[0]] + log_lik_s3 for log_lik_s2, log_lik_s3 in zip(log_liks[1], log_liks[2])]
+	return map(lambda y: sum([u*v for u, v in zip(lams, y)]), zip(*log_liks))
+
+def main():
 	"""
 	Getting training, testing, and development result all requires reading data and
 	preprocessing it. Preprocessing involves tokenizing the sentences and replacing
@@ -123,6 +134,7 @@ def part1():
 	There are 1622905 words in training data.
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
+	instances = len(sentences)
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
@@ -132,10 +144,11 @@ def part1():
 	for test and dev.
 	"""
 	train_data, __ = createTokenBank(token_sents_unk) # training data for word frequency
-	train_data_words = token_count # word count for training data
+	#train_data_words = token_count # word count for training data
+	train_data_words = token_count - instances
 
-	print("Words in training data: ", token_count)
-	print("Unique words including <STOP> and <UNK>", len(train_data))
+	print("Words in training data with <STOP>: ", train_data_words)
+	print("Unique words including <STOP> and <UNK>", len(train_data) - 1)
 
 	"""
 	Training result:
@@ -143,52 +156,48 @@ def part1():
 	and store it. Create a token bank from the n-gram, which are used as part
 	of the training data for the test and dev.
 	"""
+
+	print("Part 1:")
+
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
 		token_banks[i + 1], __ = createTokenBank(n_gram)
 		n_grams.append(n_gram)
-	train_result = test(token_banks, n_grams, token_count, train_data_words, n)
-	print("Train data:")
-	for i in range(n):
-		print(i + 1, "-gram: ", train_result[i])
+	train_result, train_log_liks = test(token_banks, n_grams, train_data_words, train_data_words, n)
+	displayResults(train_result, "Training")
 
 	"""
 	Testing result:
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.test.tokens")
+	instances = len(sentences)
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUnk2(token_sents, train_data, UNKOWN_WORD)
 
-	n_grams = []
-	for i in range(n):
-		n_gram = createNgrams(token_sents_unk, i + 1)
-		n_grams.append(n_gram)
-	test_result = test(token_banks, n_grams, token_count, train_data_words, n)
-	print("Test data:")
-	for i in range(n):
-		print(i + 1, "-gram: ", test_result[i])
+	n_grams = [createNgrams(token_sents_unk, i + 1) for i in range(n)]
+	test_result, test_log_liks = test(token_banks, n_grams, token_count - instances, train_data_words, n)
+	displayResults(test_result, "Training")
 
 	"""
 	Dev result
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.dev.tokens")
+	instances = len(sentences)
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUnk2(token_sents, train_data, UNKOWN_WORD)
 
-	n_grams = []
-	for i in range(n):
-		n_gram = createNgrams(token_sents_unk, i + 1)
-		n_grams.append(n_gram)
-	dev_result = test(token_banks, n_grams, token_count, train_data_words, n)
-	print("Dev data:")
-	for i in range(n):
-		print(i + 1, "-gram: ", dev_result[i])
+	n_grams = [createNgrams(token_sents_unk, i + 1) for i in range(n)]
+	dev_result, dev_log_liks = test(token_banks, n_grams, token_count - instances, train_data_words, n)
+	displayResults(dev_result, "Training")
 
-def main():
-	part1()
+
+	print("Part 2:")
+	lams = [0.1, 0.3, 0.6]
+	x = smoothing(train_log_liks, lams)
+	print(x)
 
 main()
 
