@@ -1,4 +1,5 @@
 import math
+import sys, getopt, os
 
 START_WORD = "<START>"
 STOP_WORD = "<STOP>"
@@ -51,10 +52,13 @@ def createNgrams(token_sents_unk, n):
 		n_grams_sents.append(n_grams_sent)
 	return n_grams_sents
 
+"""
+If perplexity is 0, then it is infinity.
+"""
 def computePerplexity(log_liks, M):
 	log_lik = sum([sum(log_lik_s) for log_lik_s in log_liks])
 	perplexity = math.pow(2, -1 * log_lik / M)
-	return perplexity
+	return float("inf") if perplexity == 0 else perplexity
 
 """
 Inputs:
@@ -75,8 +79,11 @@ def computeLogProbability(token_bank, cond_token_bank, n_grams, N, n):
 			If unigram and encountered stop or start word,
 			probability is 1. Of if gram isn't present.
 			"""
-			if (token[0] == STOP_WORD and n == 1) or token not in token_bank:
+			if (token[0] == STOP_WORD and n == 1):
 				log_lik_s.append(0)
+				continue
+			if token not in token_bank:
+				log_lik_s.append(float("inf"))
 				continue
 			"""
 			If it's unigram, denominator should be number of
@@ -100,10 +107,19 @@ def test(train_data, testing_data, word_count_test, word_count_train, n):
 		log_liks.append(log_lik)
 	return (result, log_liks)
 
-def displayResults(result, type):
+def displayResults(result, type, smoothed_result, lams):
 	print(type + ":")
 	for i in range(len(result)):
 		print(i + 1, "-gram: ", result[i])
+	print("Smoothed with l1 =", lams[0], "l2 =", lams[1], "l3=", lams[2], ":", smoothed_result)
+
+
+
+def applySmoothing(log_liks, lams, M):
+	lams = [0.1, 0.3, 0.6]
+	smoothed_log_lik = smoothing(log_liks, lams)
+	p = computePerplexity(smoothed_log_lik, M)
+	return p
 
 """
 unigram: remove start word.
@@ -113,9 +129,36 @@ trigram: add prob of first 2 words in each sentence.
 def smoothing(log_liks, lams):
 	log_liks[0] = [log_lik_s[1:] for log_lik_s in log_liks[0]]
 	log_liks[2] = [[log_lik_s2[0]] + log_lik_s3 for log_lik_s2, log_lik_s3 in zip(log_liks[1], log_liks[2])]
-	return map(lambda y: sum([u*v for u, v in zip(lams, y)]), zip(*log_liks))
+	dotProd = lambda x, y: sum([x[i] * y[i] for i in range(len(x))])
+	exponentiate = lambda x: math.pow(2, x)
+	smoothed_log_liks = []
+	list_of_tuple_of_sent = [tuple(log_liks[j][i] for j in range(3)) for i in range(len(log_liks[0]))]
+	for tuple_of_sent in list_of_tuple_of_sent:
+		smoothed_sent = [math.log(dotProd( list( map(exponentiate, pr_words) ) , lams), 2) for pr_words in zip(*tuple_of_sent)]
+		smoothed_log_liks.append(smoothed_sent)
+	return smoothed_log_liks
 
 def main():
+
+	n = 3
+	unk_threshold = 3
+	token_banks = {0 : {}}
+	lams = [0.1, 0.3, 0.6]
+	train_data_percent = 100
+
+	argv = sys.argv[1::]
+	opts, args = getopt.getopt(argv, "", ["unk_threshold=", "train_data_percent=", "l1=", "l2=", "l3="])
+	for opt, arg in opts:
+		if opt == "--unk_threshold":
+			unk_threshold = int(arg)
+		if opt == "--train_data_percent":
+			train_data_percent = int(arg)
+		if opt == "--l1":
+			lams[0] = float(arg)
+		if opt == "--l2":
+			lams[1] = float(arg)
+		if opt == "--l3":
+			lams[2] = float(arg)
 	"""
 	Getting training, testing, and development result all requires reading data and
 	preprocessing it. Preprocessing involves tokenizing the sentences and replacing
@@ -123,18 +166,12 @@ def main():
 	"""
 
 	"""
-	Token banks used to store all the n-gram tokens from training data.
-	"""
-	n = 3
-	unk_threshold = 3
-	token_banks = {0 : {}}
-
-	"""
 	There are 26602 unique words including STOP and UNK.
 	There are 1622905 words in training data.
 	"""
 	sentences = readFile("A1-Data/1b_benchmark.train.tokens")
 	instances = len(sentences)
+	sentences = sentences[:int(train_data_percent / 100 * instances)]
 	token_sents = tokenize(sentences)
 	token_bank, token_count = createTokenBank(token_sents)
 	token_sents_unk = replaceWithUNK1(token_sents, token_bank, unk_threshold)
@@ -157,15 +194,14 @@ def main():
 	of the training data for the test and dev.
 	"""
 
-	print("Part 1:")
-
 	n_grams = []
 	for i in range(n):
 		n_gram = createNgrams(token_sents_unk, i + 1)
 		token_banks[i + 1], __ = createTokenBank(n_gram)
 		n_grams.append(n_gram)
 	train_result, train_log_liks = test(token_banks, n_grams, train_data_words, train_data_words, n)
-	displayResults(train_result, "Training")
+	smoothed_train_result = applySmoothing(train_log_liks, lams, train_data_words)
+	displayResults(train_result, "Training", smoothed_train_result, lams)
 
 	"""
 	Testing result:
@@ -178,7 +214,8 @@ def main():
 
 	n_grams = [createNgrams(token_sents_unk, i + 1) for i in range(n)]
 	test_result, test_log_liks = test(token_banks, n_grams, token_count - instances, train_data_words, n)
-	displayResults(test_result, "Training")
+	smoothed_test_result = applySmoothing(test_log_liks, lams, token_count - instances)
+	displayResults(test_result, "Testing", smoothed_test_result, lams)
 
 	"""
 	Dev result
@@ -191,13 +228,8 @@ def main():
 
 	n_grams = [createNgrams(token_sents_unk, i + 1) for i in range(n)]
 	dev_result, dev_log_liks = test(token_banks, n_grams, token_count - instances, train_data_words, n)
-	displayResults(dev_result, "Training")
-
-
-	print("Part 2:")
-	lams = [0.1, 0.3, 0.6]
-	x = smoothing(train_log_liks, lams)
-	print(x)
+	smoothed_dev_result = applySmoothing(dev_log_liks, lams, token_count - instances)
+	displayResults(dev_result, "Development", smoothed_dev_result, lams)
 
 main()
 
