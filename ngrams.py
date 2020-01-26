@@ -123,15 +123,15 @@ def smoothing(log_liks, lams):
 	log_liks[2] = [[log_lik_s2[0]] + log_lik_s3 for log_lik_s2, log_lik_s3 in zip(log_liks[1], log_liks[2])]
 	dotProd = lambda x, y: sum([x[i] * y[i] for i in range(len(x))])
 	exponentiate = lambda x: 0 if x == float("inf") else math.pow(2, x)
+	take_log_2 = lambda x: float("inf") if x == 0 else math.log(x, 2)
 	smoothed_log_liks = []
 	list_of_tuple_of_sent = [tuple(log_liks[j][i] for j in range(3)) for i in range(len(log_liks[0]))]
 	for tuple_of_sent in list_of_tuple_of_sent:
-		smoothed_sent = [math.log(dotProd(list(map(exponentiate, pr_words)), lams), 2) for pr_words in zip(*tuple_of_sent)]
+		smoothed_sent = [take_log_2(dotProd(list(map(exponentiate, pr_words)), lams)) for pr_words in zip(*tuple_of_sent)]
 		smoothed_log_liks.append(smoothed_sent)
 	return smoothed_log_liks
 
 def applySmoothing(log_liks, lams, M):
-	lams = [0.1, 0.3, 0.6]
 	smoothed_log_lik = smoothing(log_liks, lams)
 	p = computePerplexity(smoothed_log_lik, M)
 	return p
